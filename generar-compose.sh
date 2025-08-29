@@ -3,7 +3,7 @@
 # Verificar que se pasen dos parámetros
 if [ $# -ne 2 ]; then
   echo "Uso: $0 <archivo_salida> <cantidad_clientes>"
-  echo "Ejemplo: $0 docker-compose.yml 5"
+  echo "Ejemplo: $0 docker-compose-dev.yaml 5"
   exit 1
 fi
 
