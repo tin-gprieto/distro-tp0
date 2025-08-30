@@ -56,3 +56,8 @@ class Server:
         c, addr = self._server_socket.accept()
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
         return c
+
+    def __server_shutdown(self):
+        logging.info("action: shutdown | result: in_progress")
+        self._server_socket.close()
+        logging.info("action: shutdown | result: success")
