@@ -18,9 +18,6 @@ EOF
 RESPONSE=$(docker run --rm --network $NETWORK_NAME busybox sh -c \
     "echo '$MESSAGE' | nc $SERVICE_NAME $PORT")
 
-echo "Mensaje enviado: $MESSAGE"
-echo "Respuesta recibida: $RESPONSE"
-
 if [ "$RESPONSE" == "$MESSAGE" ]; then
     echo "action: test_echo_server | result: success"
     exit 0
