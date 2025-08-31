@@ -74,7 +74,7 @@ func (c *Client) StartClientLoop() {
 		select {
 		case <-c.interrupt:
 			// Corta la ejecución del loop ante una señal de interrupción
-			log.Infof("action: loop_finished | result: shutdown | client_id: %v", c.config.ID)
+			log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 			return
 		default:
 			// Continúa con la ejecución normal del loop
