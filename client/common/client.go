@@ -17,9 +17,9 @@ type ClientConfig struct {
 	ServerAddress string
 	LoopAmount    int
 	LoopPeriod    time.Duration
-	Name          string
-	Surname       string
-	DNI           string
+	FirstName     string
+	LastName      string
+	Document      string
 	BirthDate     string
 	Number        string
 }

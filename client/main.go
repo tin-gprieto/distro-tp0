@@ -39,9 +39,9 @@ func InitConfig() (*viper.Viper, error) {
 	v.BindEnv("loop", "period")
 	v.BindEnv("loop", "amount")
 	v.BindEnv("log", "level")
-	v.BindEnv("name")
-	v.BindEnv("surname")
-	v.BindEnv("dni")
+	v.BindEnv("first_name")
+	v.BindEnv("last_name")
+	v.BindEnv("document")
 	v.BindEnv("birthdate")
 	v.BindEnv("number")
 
@@ -88,15 +88,15 @@ func InitLogger(logLevel string) error {
 // PrintConfig Print all the configuration parameters of the program.
 // For debugging purposes only
 func PrintConfig(v *viper.Viper) {
-	log.Infof("action: config | result: success | client_id: %s | server_address: %s | loop_amount: %v | loop_period: %v | log_level: %s | name: %s | surname: %s | dni: %s | birthdate: %s | number: %s",
+	log.Infof("action: config | result: success | client_id: %s | server_address: %s | loop_amount: %v | loop_period: %v | log_level: %s | first_name: %s | last_name: %s | document: %s | birthdate: %s | number: %s",
 		v.GetString("id"),
 		v.GetString("server.address"),
 		v.GetInt("loop.amount"),
 		v.GetDuration("loop.period"),
 		v.GetString("log.level"),
-		v.GetString("name"),
-		v.GetString("surname"),
-		v.GetString("dni"),
+		v.GetString("first_name"),
+		v.GetString("last_name"),
+		v.GetString("document"),
 		v.GetString("birthdate"),
 		v.GetString("number"),
 	)
@@ -120,9 +120,9 @@ func main() {
 		ID:            v.GetString("id"),
 		LoopAmount:    v.GetInt("loop.amount"),
 		LoopPeriod:    v.GetDuration("loop.period"),
-		Name:          v.GetString("name"),
-		Surname:       v.GetString("surname"),
-		DNI:           v.GetString("dni"),
+		FirstName:     v.GetString("first_name"),
+		LastName:      v.GetString("last_name"),
+		Document:      v.GetString("document"),
 		BirthDate:     v.GetString("birthdate"),
 		Number:        v.GetString("number"),
 	}
