@@ -1,8 +1,6 @@
 package common
 
 import (
-	"bufio"
-	"fmt"
 	"net"
 	"time"
 
@@ -29,14 +27,33 @@ type Client struct {
 	config    ClientConfig
 	conn      net.Conn
 	interrupt chan struct{}
+	bet       *Bet
 }
 
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
 func NewClient(config ClientConfig) *Client {
+
+	bet, err := NewBet(
+		config.ID,
+		config.FirstName,
+		config.LastName,
+		config.Document,
+		config.BirthDate,
+		config.Number,
+	)
+	if err != nil {
+		log.Criticalf("action: create_bet | result: fail | client_id: %v | error: %v",
+			config.ID,
+			err,
+		)
+		return nil
+	}
+
 	client := &Client{
 		config:    config,
 		interrupt: make(chan struct{}),
+		bet:       bet,
 	}
 	return client
 }
@@ -88,27 +105,20 @@ func (c *Client) StartClientLoop() {
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
 
-		// TODO: Modify the send to avoid short-write
-		fmt.Fprintf(
-			c.conn,
-			"[CLIENT %v] Message N°%v\n",
-			c.config.ID,
-			msgID,
-		)
-		msg, err := bufio.NewReader(c.conn).ReadString('\n')
+		err := sendBet(c.conn, c.bet)
+
 		c.conn.Close()
 
 		if err != nil {
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-				c.config.ID,
+			log.Errorf("action: apuesta_enviada | result: fail | error: %v",
 				err,
 			)
 			return
 		}
 
-		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
-			c.config.ID,
-			msg,
+		log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
+			c.bet.Document,
+			c.bet.Number,
 		)
 
 		// Wait a time between sending one message and the next one
