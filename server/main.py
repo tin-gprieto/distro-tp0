@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 from configparser import ConfigParser
-import signal
-import sys
 from common.server import Server
 import logging
 import os
@@ -51,8 +49,6 @@ def main():
 
     # Initialize server and start server loop
     server = Server(port, listen_backlog)
-
-    signal.signal(signal.SIGTERM, lambda signum, frame: (server.server_shutdown(), sys.exit(0)))
 
     server.run()
 
