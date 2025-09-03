@@ -1,7 +1,7 @@
 import struct
 
 from common.utils import Bet
-from server.common.safe_transport import safe_rcv
+from common.safe_transport import safe_rcv
 
 def __deserialize_string(data: bytes, offset: int):
     """Lee una string: primero 2 bytes de longitud, luego contenido."""
