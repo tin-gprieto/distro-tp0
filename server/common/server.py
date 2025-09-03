@@ -1,4 +1,4 @@
-from signal import signal
+import signal
 import socket
 import logging
 
