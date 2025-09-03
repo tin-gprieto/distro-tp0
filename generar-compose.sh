@@ -41,6 +41,11 @@ cat >> $ARCHIVO <<EOF
     entrypoint: /client
     environment:
       - CLI_ID=$i
+      - CLI_FIRST_NAME=Lionel
+      - CLI_LAST_NAME=Messi
+      - CLI_DOCUMENT=12345678
+      - CLI_BIRTH_DATE=1987-06-24
+      - CLI_NUMBER=1010
     volumes:
       - ./client/config.yaml:/config.yaml
     networks:
