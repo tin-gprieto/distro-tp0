@@ -1,6 +1,7 @@
 import signal
 import socket
 import logging
+import sys
 
 from common.mbp import recv_bet
 from common.utils import store_bets
@@ -22,7 +23,7 @@ class Server:
         finishes, servers starts to accept new connections again
         """
 
-        signal.signal(signal.SIGTERM, lambda signum, frame: (self.server_shutdown(), self.exit(0)))
+        signal.signal(signal.SIGTERM, lambda signum, frame: (self.server_shutdown(), sys.exit(0)))
         
         while True:
             client_sock = self.__accept_new_connection()
