@@ -43,7 +43,7 @@ cat >> $ARCHIVO <<EOF
       - CLI_ID=$i
     volumes:
       - ./client/config.yaml:/config.yaml
-      - ./client/data/dataset/agency-$i.csv:/agency.csv
+      - ./.data/dataset/agency-$i.csv:/agency.csv
     networks:
       - testing_net
     depends_on:
