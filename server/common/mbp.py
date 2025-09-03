@@ -38,7 +38,7 @@ def recv_bet(client_sock):
         raise ConnectionError("Conexión cerrada al leer longitud")
     total_length = struct.unpack(">I", header)[0]
 
-    # Leer payload completo
+    # Asegura que se recibe todo el payload - Short read handler
     payload = b''
     while len(payload) < total_length:
         chunk = client_sock.recv(total_length - len(payload))

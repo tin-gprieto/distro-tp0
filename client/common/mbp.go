@@ -77,10 +77,15 @@ func sendBet(conn net.Conn, bet *Bet) error {
 		return err
 	}
 
-	// net.Conn.Write ya envía todo el buffer (o error)
-	_, err = conn.Write(data)
-	if err != nil {
-		return err
+	// Asegura que se envía todo el paquete - Short write handler
+	packet_send_len := 0
+	for packet_send_len < len(data) {
+		n, err := conn.Write(data[packet_send_len:])
+		if err != nil {
+			return err
+		}
+		packet_send_len += n
 	}
+
 	return nil
 }
