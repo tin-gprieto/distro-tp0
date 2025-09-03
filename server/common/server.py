@@ -1,9 +1,7 @@
+import signal
 import socket
 import logging
 import sys
-
-from blinker import signal
-
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -20,7 +18,6 @@ class Server:
         communication with a client. After client with communucation
         finishes, servers starts to accept new connections again
         """
-
         
         signal.signal(signal.SIGTERM, lambda signum, frame: (self.server_shutdown(), sys.exit(0)))
 
