@@ -1,3 +1,4 @@
+from signal import signal
 import socket
 import logging
 
@@ -21,8 +22,8 @@ class Server:
         finishes, servers starts to accept new connections again
         """
 
-        # TODO: Modify this program to handle signal to graceful shutdown
-        # the server
+        signal.signal(signal.SIGTERM, lambda signum, frame: (self.server_shutdown(), self.exit(0)))
+        
         while True:
             client_sock = self.__accept_new_connection()
             self.__handle_client_connection(client_sock)
