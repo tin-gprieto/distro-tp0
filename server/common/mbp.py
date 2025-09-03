@@ -1,8 +1,9 @@
 import struct
 
 from common.utils import Bet
+from server.common.safe_transport import safe_rcv
 
-def __read_string(data: bytes, offset: int):
+def __deserialize_string(data: bytes, offset: int):
     """Lee una string: primero 2 bytes de longitud, luego contenido."""
     length = struct.unpack_from(">H", data, offset)[0]
     offset += 2
@@ -20,10 +21,10 @@ def deserialize_bet(data: bytes) -> Bet:
     agency = struct.unpack_from(">i", data, offset)[0]
     offset += 4
 
-    first_name, offset = __read_string(data, offset)
-    last_name, offset = __read_string(data, offset)
-    document, offset = __read_string(data, offset)
-    birthdate_str, offset = __read_string(data, offset)
+    first_name, offset = __deserialize_string(data, offset)
+    last_name, offset = __deserialize_string(data, offset)
+    document, offset = __deserialize_string(data, offset)
+    birthdate_str, offset = __deserialize_string(data, offset)
     number = struct.unpack_from(">i", data, offset)[0]
     
     offset += 4
@@ -33,17 +34,11 @@ def deserialize_bet(data: bytes) -> Bet:
 def recv_bet(client_sock):
     """Recibe un Bet serializado de forma simple."""
     # Leer longitud
-    header = client_sock.recv(4)
-    if not header:
+    try:
+        header = safe_rcv(client_sock, 4)
+        total_length = struct.unpack(">I", header)[0]
+        payload = safe_rcv(client_sock, total_length)
+    except ConnectionError:
         raise ConnectionError("Conexión cerrada al leer longitud")
-    total_length = struct.unpack(">I", header)[0]
-
-    # Asegura que se recibe todo el payload - Short read handler
-    payload = b''
-    while len(payload) < total_length:
-        chunk = client_sock.recv(total_length - len(payload))
-        if not chunk:
-            raise ConnectionError("Conexión cerrada al leer payload")
-        payload += chunk
-
+    
     return deserialize_bet(header + payload)
