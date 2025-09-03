@@ -1,7 +1,9 @@
 package common
 
 import (
+	"encoding/csv"
 	"net"
+	"os"
 	"time"
 
 	"github.com/op/go-logging"
@@ -15,11 +17,7 @@ type ClientConfig struct {
 	ServerAddress string
 	LoopAmount    int
 	LoopPeriod    time.Duration
-	FirstName     string
-	LastName      string
-	Document      string
-	BirthDate     string
-	Number        string
+	MaxAmount     int
 }
 
 // Client Entity that encapsulates how
@@ -27,33 +25,35 @@ type Client struct {
 	config    ClientConfig
 	conn      net.Conn
 	interrupt chan struct{}
-	bet       *Bet
+	file      *os.File
+	reader    *csv.Reader
+}
+
+func SetFile() *os.File {
+	path := "./agency.csv"
+	file, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+	return file
 }
 
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
 func NewClient(config ClientConfig) *Client {
 
-	bet, err := NewBet(
-		config.ID,
-		config.FirstName,
-		config.LastName,
-		config.Document,
-		config.BirthDate,
-		config.Number,
-	)
-	if err != nil {
-		log.Criticalf("action: create_bet | result: fail | client_id: %v | error: %v",
-			config.ID,
-			err,
-		)
+	file := SetFile()
+
+	if file == nil {
+		log.Errorf("action: set_file | result: fail")
 		return nil
 	}
 
 	client := &Client{
 		config:    config,
 		interrupt: make(chan struct{}),
-		bet:       bet,
+		file:      file,
+		reader:    csv.NewReader(file),
 	}
 	return client
 }
@@ -67,6 +67,9 @@ func ClientShutdown(client *Client) {
 	client.Stop()
 	if client.conn != nil {
 		client.conn.Close()
+	}
+	if client.file != nil {
+		client.file.Close()
 	}
 	log.Infof("action: shutdown | result: success | client_id: %s", client.config.ID)
 }
@@ -89,9 +92,10 @@ func (c *Client) createClientSocket() error {
 
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
-	// There is an autoincremental msgID to identify every message sent
-	// Messages if the message amount threshold has not been surpassed
-	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
+
+	eof := false
+
+	for !eof {
 
 		select {
 		case <-c.interrupt:
@@ -105,24 +109,36 @@ func (c *Client) StartClientLoop() {
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
 
-		err := sendBet(c.conn, c.bet)
+		batch := NewBatch()
+
+		finished, betsLoaded, err := batch.readAndLoad(c.config.ID, c.config.MaxAmount, c.reader)
+
+		if err != nil {
+
+			log.Errorf("action: batch_loaded | result: fail | error: %v", err)
+
+		} else {
+
+			ack, err := SendBatch(c.conn, batch)
+
+			if err != nil {
+				log.Errorf("action: apuesta_enviada | result: fail | error: %v", err)
+				break
+			}
+
+			if ack.Id != SUCCESS_ID && ack.BetsRead != uint32(betsLoaded) {
+				log.Errorf("action: apuesta_enviada | result: fail | error: %v", err)
+			}
+		}
 
 		c.conn.Close()
 
-		if err != nil {
-			log.Errorf("action: apuesta_enviada | result: fail | error: %v",
-				err,
-			)
-			return
-		}
-
-		log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
-			c.bet.Document,
-			c.bet.Number,
-		)
+		log.Infof("action: apuesta_enviada | result: success | cantidad: %v", betsLoaded)
 
 		// Wait a time between sending one message and the next one
 		time.Sleep(c.config.LoopPeriod)
+
+		eof = finished
 
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)

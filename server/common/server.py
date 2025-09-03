@@ -3,8 +3,7 @@ import socket
 import logging
 import sys
 
-from common.mbp import recv_bet
-from common.utils import store_bets
+from common.batch import recv_batch
 
 
 class Server:
@@ -37,11 +36,11 @@ class Server:
         client socket will also be closed
         """
         try:
-            bet = recv_bet(client_sock)
-            store_bets([bet])
-            logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | number: {bet.number}')
+            batch = recv_batch(client_sock)
+            bets_size = batch.process()
+            logging.info(f'action: apuesta_recibida | result: success | cantidad: {bets_size}')
         except OSError as e:
-            logging.error(f"action: apuesta_almacenada | result: fail | error: {e}")
+            logging.error(f"action: apuesta_recibida | result: fail | error: {e}")
         finally:
             client_sock.close()
 
