@@ -4,7 +4,7 @@ import socket
 from common.utils import has_won, load_bets
 from common.mbp import WinnersAck
 
-WAITLIST_SIZE = 2
+WAITLIST_SIZE = 5
 
 class AgencyHandler:
     def __init__(self):
