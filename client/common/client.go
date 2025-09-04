@@ -153,7 +153,7 @@ func (c *Client) StartClient() {
 		} else {
 
 			if betsLoaded < c.config.MaxAmount {
-				log.Debugf("action: end_of_file | result: reached")
+				log.Debugf("action: sending_last_batch | result: in_progress")
 				loadFinished = true
 			}
 
@@ -170,6 +170,17 @@ func (c *Client) StartClient() {
 			}
 		}
 
+		if loadFinished {
+			log.Infof("action: waiting_for_winners | result: in_progress | bets_sent: %d", betsSent)
+			ganadores, err := c.WaitWinners()
+
+			if err != nil {
+				log.Errorf("action: consulta_ganadores | result: fail | error: %v", err)
+			} else {
+				log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %d", ganadores)
+			}
+		}
+
 		c.conn.Close()
 
 		// Wait a time between sending one message and the next one
@@ -179,22 +190,11 @@ func (c *Client) StartClient() {
 
 	}
 
-	log.Infof("action: waiting_for_winners | result: in_progress | bets_sent: %d", betsSent)
-	ganadores, err := c.WaitWinners()
-
-	if err != nil {
-		log.Errorf("action: consulta_ganadores | result: fail | error: %v", err)
-	} else {
-		log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %d", ganadores)
-	}
-
 }
 
 // Queda esperando a que el servidor se conecte de nuevo y envíe el mensaje de ganador
 func (c *Client) WaitWinners() (int, error) {
-	c.createClientSocket()
 	ack, err := RcvAck(c.conn)
-	c.conn.Close()
 	if err != nil {
 		return 0, err
 	}

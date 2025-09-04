@@ -126,6 +126,9 @@ func main() {
 		common.ClientShutdown(client)
 	}()
 
+	// wait for a while before starting the client to wait for the server to be ready
+	time.Sleep(5 * time.Second)
+
 	client.StartClient()
 
 	common.ClientShutdown(client)

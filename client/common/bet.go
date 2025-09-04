@@ -94,8 +94,6 @@ func ReadBet(agency string, reader *csv.Reader) (*Bet, error) {
 		return nil, err
 	}
 
-	log.Debugf("action: read_line | result: success | line: %v", record)
-
 	return NewBet(agency, record[0], record[1], record[2], record[3], record[4])
 
 }
