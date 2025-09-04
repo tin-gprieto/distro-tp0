@@ -9,6 +9,40 @@ import (
 	"time"
 )
 
+const SUCCESS_ID = 1
+const ERROR_ID = 2
+
+type Ack struct {
+	Id       uint32
+	BetsRead uint32
+}
+
+func DeserializeServerAck(data []byte) (*Ack, error) {
+	if len(data) != 8 {
+		return nil, fmt.Errorf("invalid data length")
+	}
+	ack := &Ack{}
+	err := binary.Read(bytes.NewReader(data), binary.BigEndian, ack)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deserialize server ack: %v", err)
+	}
+	return ack, nil
+}
+
+func RcvAck(conn net.Conn) (*Ack, error) {
+
+	bytes, err := safe_recv(conn, 8)
+	if err != nil {
+		return nil, fmt.Errorf("failed to receive server ack: %v", err)
+	}
+
+	ack, err := DeserializeServerAck(bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deserialize server ack: %v", err)
+	}
+	return ack, nil
+}
+
 type Bet struct {
 	Agency    uint32
 	FirstName string

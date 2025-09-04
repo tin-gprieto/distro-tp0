@@ -89,7 +89,7 @@ func (b *Batch) Serialize() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func SendBatch(conn net.Conn, batch *Batch) (*ServerAck, error) {
+func SendBatch(conn net.Conn, batch *Batch) (*Ack, error) {
 	serializedBatch, err := batch.Serialize()
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize batch: %v", err)
@@ -103,13 +103,13 @@ func SendBatch(conn net.Conn, batch *Batch) (*ServerAck, error) {
 	log.Debugf("action: batch_sent | result: success | size: %d", batch.BatchSize)
 	log.Debugf("action: waiting_for_ack | result: in_progress")
 
-	rcv_server_ack, err := rcvServerAck(conn)
+	rcv_ack, err := RcvAck(conn)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to receive server ack: %v", err)
 	}
 
-	log.Debugf("action: ack_received | result: success | ack_id: %d | bets_read: %d", rcv_server_ack.Id, rcv_server_ack.BetsRead)
+	log.Debugf("action: ack_received | result: success | ack_id: %d | bets_read: %d", rcv_ack.Id, rcv_ack.BetsRead)
 
-	return rcv_server_ack, nil
+	return rcv_ack, nil
 }
