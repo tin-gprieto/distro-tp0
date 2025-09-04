@@ -126,7 +126,7 @@ func main() {
 		common.ClientShutdown(client)
 	}()
 
-	client.StartClientLoop()
+	client.StartClient()
 
 	common.ClientShutdown(client)
 }

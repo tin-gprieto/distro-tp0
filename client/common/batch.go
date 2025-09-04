@@ -11,13 +11,22 @@ import (
 const MaxBatchSize = 8192
 
 type Batch struct {
+	AgencyNum   uint32
 	BatchSize   uint32
 	BatchBuffer *bytes.Buffer
 }
 
-func NewBatch() *Batch {
+func NewBatch(agency string) *Batch {
+
+	agency_num := uint32(0)
+	fmt.Sscanf(agency, "%d", &agency_num)
+
+	// 4 del size + 4 del agency + 1 del isLast
+	header_size := uint32(4 + 4 + 1)
+
 	return &Batch{
-		BatchSize:   4,
+		AgencyNum:   agency_num,
+		BatchSize:   header_size,
 		BatchBuffer: new(bytes.Buffer),
 	}
 }
@@ -36,20 +45,27 @@ func (b *Batch) AddData(data []byte) bool {
 	return true
 }
 
-func (b *Batch) Serialize() []byte {
+func (b *Batch) Serialize(bitLast uint8) []byte {
 	buf := new(bytes.Buffer)
 
 	// Escribe en el buf la estructura en bytes
 	length := uint32(len(b.BatchBuffer.Bytes()))
 	binary.Write(buf, binary.BigEndian, length)
+	binary.Write(buf, binary.BigEndian, b.AgencyNum)
+	binary.Write(buf, binary.BigEndian, bitLast)
 	buf.Write(b.BatchBuffer.Bytes())
 
 	return buf.Bytes()
 }
 
-func (b *Batch) Send(conn net.Conn) (*Ack, error) {
+func (b *Batch) Send(conn net.Conn, isLastOne bool) (*Ack, error) {
 
-	err := SafeSend(conn, b.Serialize())
+	bitLast := uint8(0)
+	if isLastOne {
+		bitLast = 1
+	}
+
+	err := SafeSend(conn, b.Serialize(bitLast))
 	if err != nil {
 		return nil, fmt.Errorf("failed to send batch: %v", err)
 	}

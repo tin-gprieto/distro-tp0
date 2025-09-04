@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/csv"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -115,22 +116,24 @@ func (c *Client) ReadBetsAndLoadBatch(batch *Batch) (bool, int, error) {
 
 	}
 
-	log.Infof("action: batch_loaded | result: success | bets_amount: %d | size: %d", linesLoaded, batch.BatchSize)
+	log.Debugf("action: batch_loaded | result: success | bets_amount: %d | size: %d", linesLoaded, batch.BatchSize)
 
 	return endOfFile, linesLoaded, nil
 }
 
 // StartClientLoop Send messages to the client until some time threshold is met
-func (c *Client) StartClientLoop() {
+func (c *Client) StartClient() {
 
 	eof := false
+
+	betsSent := 0
 
 	for !eof {
 
 		select {
 		case <-c.interrupt:
 			// Corta la ejecución del loop ante una señal de interrupción
-			log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+			log.Infof("action: send_interrupted | result: success | client_id: %v", c.config.ID)
 			return
 		default:
 			// Continúa con la ejecución normal del loop
@@ -139,9 +142,9 @@ func (c *Client) StartClientLoop() {
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
 
-		batch := NewBatch()
+		batch := NewBatch(c.config.ID)
 
-		finished, betsLoaded, err := c.ReadBetsAndLoadBatch(batch)
+		loadFinished, betsLoaded, err := c.ReadBetsAndLoadBatch(batch)
 
 		if err != nil {
 
@@ -149,14 +152,20 @@ func (c *Client) StartClientLoop() {
 
 		} else {
 
-			ack, err := batch.Send(c.conn)
+			if betsLoaded < c.config.MaxAmount {
+				log.Debugf("action: end_of_file | result: reached")
+				loadFinished = true
+			}
 
-			if err != nil || ack.BetsRead != uint32(betsLoaded) {
+			ack, err := batch.Send(c.conn, loadFinished)
+
+			if err != nil || ack.Size != uint32(betsLoaded) {
 				log.Errorf("action: apuesta_enviada | result: fail | error: %v", err)
 				break
 			}
 
 			if ack.Id == SUCCESS_ID {
+				betsSent += betsLoaded
 				log.Infof("action: apuesta_enviada | result: success | cantidad: %v", betsLoaded)
 			}
 		}
@@ -166,8 +175,31 @@ func (c *Client) StartClientLoop() {
 		// Wait a time between sending one message and the next one
 		time.Sleep(c.config.LoopPeriod)
 
-		eof = finished
+		eof = loadFinished
 
 	}
 
+	log.Infof("action: waiting_for_winners | result: in_progress | bets_sent: %d", betsSent)
+	ganadores, err := c.WaitWinners()
+
+	if err != nil {
+		log.Errorf("consulta_ganadores | result: fail | error: %v", err)
+	} else {
+		log.Infof("consulta_ganadores | result: success | cant_ganadores: %d", ganadores)
+	}
+
+}
+
+// Queda esperando a que el servidor se conecte de nuevo y envíe el mensaje de ganador
+func (c *Client) WaitWinners() (int, error) {
+	c.createClientSocket()
+	ack, err := RcvAck(c.conn)
+	c.conn.Close()
+	if err != nil {
+		return 0, err
+	}
+	if ack.Id == WINNERS_ID {
+		return len(ack.Winners), nil
+	}
+	return 0, fmt.Errorf("unexpected ack id: %d", ack.Id)
 }

@@ -14,8 +14,9 @@ from common.batch import Batch
 
 SUCCESS_ID = 0
 ERROR_ID = 1
+WINNERS_ID = 2
 
-class Ack:
+class BatchAck:
     def __init__(self, id: int, bets_read: int):
         self.id = id
         self.bets_read = bets_read
@@ -27,6 +28,30 @@ class Ack:
         """Envía el paquete ACK al cliente."""
         data = self.serialize()
         safe_send(client_sock, data)
+
+class WinnersAck:
+    def __init__(self, winners: list[str]):
+        self.id = WINNERS_ID
+        self.winners = winners
+        self.size = 4 + 2 + sum(2 + len(w) for w in winners)  # ID + count + each string length + each string
+
+    def serialize(self) -> bytes:
+        data = self.id.to_bytes(4, 'big') # ID uint32
+        buf = bytes()
+        for winner in self.winners:
+            encoded_winner = winner.encode('utf-8') # String UTF-8
+            buf += len(encoded_winner).to_bytes(2, 'big') # Length uint16
+            buf +=  encoded_winner # String encoded
+
+        data += len(buf).to_bytes(4, 'big') # Count uint32
+        data += buf
+        return data
+
+    def send(self, client_sock) -> None:
+        """Envía el paquete de ganadores al cliente."""
+        data = self.serialize()
+        safe_send(client_sock, data)
+
 
 def __deserialize_string(data: bytes, offset: int):
     """Lee una string: primero 2 bytes de longitud, luego contenido."""
@@ -68,13 +93,13 @@ def __deserialize_bets_in_batch(batch: Batch) -> list[Bet]:
 
     return bets
 
-def rcv_bets_in_batch(client_sock) -> list[Bet]:
+def rcv_bets_in_batch(client_sock) -> tuple[list[Bet], bool]:
     """Recibe un Batch de Bets desde el socket del cliente."""
     batch = Batch.recv(client_sock)
     bets = __deserialize_bets_in_batch(batch)
-    Ack(SUCCESS_ID, len(bets)).send(client_sock)        
+    BatchAck(SUCCESS_ID, len(bets)).send(client_sock)        
     logging.info(f"action: ack_sent | result: success | ack_id: {SUCCESS_ID} | bets_read: {len(bets)}")
-    return bets        
+    return bets, batch.isLast, batch.agency
 
 def recv_bet(client_sock):
     """Recibe un Bet serializado de forma simple."""
@@ -85,7 +110,8 @@ def recv_bet(client_sock):
         payload = safe_rcv(client_sock, total_length)
     except ConnectionError:
         raise ConnectionError("Conexión cerrada al leer longitud")
-
+    BatchAck(SUCCESS_ID, 1).send(client_sock)        
+    logging.info(f"action: ack_sent | result: success | ack_id: {SUCCESS_ID} | bets_read: 1")
     return __deserialize_bet(payload)
 
 
