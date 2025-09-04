@@ -10,7 +10,7 @@ class AgencyHandler:
         self.__agencies_waitlist = {}
         # Diccionario (ip, socket)
         self.__agencies_ready = {}
-        self.__client_amount = client_amount
+        self.__client_amount = int(client_amount)
 
     def is_in_the_waitlist(self, ip):
         """Verifica si una agencia está en la lista de espera."""

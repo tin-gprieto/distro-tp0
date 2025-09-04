@@ -56,7 +56,7 @@ class Server:
             else:
                 
                 self.agency_handler.register_socket(ip, client_sock)
-                logging.info(f"action: agencia_lista | result: success | agency_ip: {ip}")
+                logging.debug(f"action: agencia_lista | result: success | agency_ip: {ip}")
                 
                 if self.agency_handler.all_agencies_are_ready():
                     logging.info(f"action: sorteo | result: in_progress")
