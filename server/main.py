@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 from configparser import ConfigParser
-import signal
-import sys
 from common.server import Server
 import logging
 import os
@@ -50,7 +48,7 @@ def main():
                   f"listen_backlog: {listen_backlog} | logging_level: {logging_level}")
 
     # Initialize server and start server loop
-    server = Server(port, listen_backlog, config_params["client_amount"])
+    server = Server(port, listen_backlog, os.getenv("CLIENT_AMOUNT"))
 
     server.run()
 
