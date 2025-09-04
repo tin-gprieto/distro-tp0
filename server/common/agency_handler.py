@@ -2,7 +2,7 @@ import logging
 import socket
 
 from common.utils import has_won, load_bets
-from common.mbp import WinnersAck
+from mbp.ack import WinnersAck
 
 class AgencyHandler:
     def __init__(self, client_amount):

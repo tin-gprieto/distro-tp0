@@ -3,7 +3,7 @@ import socket
 import logging
 import sys
 
-from common.mbp import rcv_bets_in_batch
+from mbp.bet import rcv_bets_in_batch
 from common.utils import store_bets
 from common.agency_handler import AgencyHandler
 
