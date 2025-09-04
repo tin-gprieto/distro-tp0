@@ -3,9 +3,7 @@ package common
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/csv"
 	"fmt"
-	"io"
 	"net"
 )
 
@@ -24,61 +22,21 @@ func NewBatch() *Batch {
 	}
 }
 
-func (b *Batch) addBet(bet *Bet) bool {
+func (b *Batch) AddData(data []byte) bool {
 
-	betSerialized, err := bet.Serialize()
-	if err != nil {
-		return false
-	}
-	betSize := uint32(len(betSerialized))
+	betSize := uint32(len(data))
 
 	if b.BatchSize+betSize > MaxBatchSize {
 		return false
 	}
 
-	b.BatchBuffer.Write(betSerialized)
+	b.BatchBuffer.Write(data)
 	b.BatchSize += betSize
 
 	return true
 }
 
-func (b *Batch) readAndLoad(agency string, maxAmount int, reader *csv.Reader) (bool, int, error) {
-
-	linesLoaded := 0
-	canLoadMore := true
-	endOfFile := false
-
-	for linesLoaded < maxAmount && canLoadMore {
-
-		record, err := reader.Read()
-
-		if err == io.EOF {
-			endOfFile = true
-			break
-		}
-
-		if err != nil {
-			return endOfFile, linesLoaded, err
-		}
-
-		log.Debugf("action: read_line | result: success | line: %v", record)
-
-		bet, err := NewBet(agency, record[0], record[1], record[2], record[3], record[4])
-		if err != nil {
-			return endOfFile, linesLoaded, err
-		}
-
-		canLoadMore = b.addBet(bet)
-		linesLoaded++
-
-	}
-
-	log.Infof("action: batch_loaded | result: success | bets_amount: %d | size: %d", linesLoaded, b.BatchSize)
-
-	return endOfFile, linesLoaded, nil
-}
-
-func (b *Batch) Serialize() ([]byte, error) {
+func (b *Batch) Serialize() []byte {
 	buf := new(bytes.Buffer)
 
 	// Escribe en el buf la estructura en bytes
@@ -86,30 +44,20 @@ func (b *Batch) Serialize() ([]byte, error) {
 	binary.Write(buf, binary.BigEndian, length)
 	buf.Write(b.BatchBuffer.Bytes())
 
-	return buf.Bytes(), nil
+	return buf.Bytes()
 }
 
-func SendBatch(conn net.Conn, batch *Batch) (*Ack, error) {
-	serializedBatch, err := batch.Serialize()
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize batch: %v", err)
-	}
+func (b *Batch) Send(conn net.Conn) (*Ack, error) {
 
-	err = safe_send(conn, serializedBatch)
+	err := SafeSend(conn, b.Serialize())
 	if err != nil {
 		return nil, fmt.Errorf("failed to send batch: %v", err)
 	}
 
-	log.Debugf("action: batch_sent | result: success | size: %d", batch.BatchSize)
+	log.Debugf("action: batch_sent | result: success | size: %d", b.BatchSize)
 	log.Debugf("action: waiting_for_ack | result: in_progress")
 
 	rcv_ack, err := RcvAck(conn)
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to receive server ack: %v", err)
-	}
-
-	log.Debugf("action: ack_received | result: success | ack_id: %d | bets_read: %d", rcv_ack.Id, rcv_ack.BetsRead)
-
-	return rcv_ack, nil
+	return rcv_ack, err
 }

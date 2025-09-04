@@ -3,7 +3,9 @@ package common
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/csv"
 	"fmt"
+	"io"
 	"net"
 	"strconv"
 	"time"
@@ -17,7 +19,7 @@ type Ack struct {
 	BetsRead uint32
 }
 
-func DeserializeServerAck(data []byte) (*Ack, error) {
+func DeserializeAck(data []byte) (*Ack, error) {
 	if len(data) != 8 {
 		return nil, fmt.Errorf("invalid data length")
 	}
@@ -31,12 +33,12 @@ func DeserializeServerAck(data []byte) (*Ack, error) {
 
 func RcvAck(conn net.Conn) (*Ack, error) {
 
-	bytes, err := safe_recv(conn, 8)
+	bytes, err := SafeRecv(conn, 8)
 	if err != nil {
 		return nil, fmt.Errorf("failed to receive server ack: %v", err)
 	}
 
-	ack, err := DeserializeServerAck(bytes)
+	ack, err := DeserializeAck(bytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to deserialize server ack: %v", err)
 	}
@@ -85,7 +87,7 @@ func writeString(buf *bytes.Buffer, s string) {
 }
 
 // Serialize convierte Bet en []byte
-func (b *Bet) Serialize() ([]byte, error) {
+func (b *Bet) Serialize() []byte {
 	buf := new(bytes.Buffer)
 
 	// Escribe en el buf la estructura en bytes
@@ -102,16 +104,38 @@ func (b *Bet) Serialize() ([]byte, error) {
 	binary.Write(final, binary.BigEndian, uint32(len(data))) // longitud total
 	final.Write(data)
 
-	return final.Bytes(), nil
+	return final.Bytes()
 }
 
-func sendBet(conn net.Conn, bet *Bet) error {
+func (b *Bet) Send(conn net.Conn) (*Ack, error) {
 
-	data, err := bet.Serialize()
+	err := SafeSend(conn, b.Serialize())
 
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to send batch: %v", err)
 	}
 
-	return safe_send(conn, data)
+	log.Debugf("action: bet_sent | result: success")
+	log.Debugf("action: waiting_for_ack | result: in_progress")
+
+	rcv_ack, err := RcvAck(conn)
+
+	return rcv_ack, err
+}
+
+func ReadBet(agency string, reader *csv.Reader) (*Bet, error) {
+	record, err := reader.Read()
+
+	if err == io.EOF {
+		return nil, io.EOF
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	log.Debugf("action: read_line | result: success | line: %v", record)
+
+	return NewBet(agency, record[0], record[1], record[2], record[3], record[4])
+
 }

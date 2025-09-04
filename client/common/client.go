@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/csv"
+	"io"
 	"net"
 	"os"
 	"time"
@@ -90,6 +91,35 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
+func (c *Client) ReadBetsAndLoadBatch(batch *Batch) (bool, int, error) {
+
+	linesLoaded := 0
+	canLoadMore := true
+	endOfFile := false
+
+	for linesLoaded < c.config.MaxAmount && canLoadMore {
+
+		bet, err := ReadBet(c.config.ID, c.reader)
+
+		if err == io.EOF {
+			endOfFile = true
+			break
+		}
+
+		if err != nil {
+			return endOfFile, linesLoaded, err
+		}
+
+		canLoadMore = batch.AddData(bet.Serialize())
+		linesLoaded++
+
+	}
+
+	log.Infof("action: batch_loaded | result: success | bets_amount: %d | size: %d", linesLoaded, batch.BatchSize)
+
+	return endOfFile, linesLoaded, nil
+}
+
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
 
@@ -111,7 +141,7 @@ func (c *Client) StartClientLoop() {
 
 		batch := NewBatch()
 
-		finished, betsLoaded, err := batch.readAndLoad(c.config.ID, c.config.MaxAmount, c.reader)
+		finished, betsLoaded, err := c.ReadBetsAndLoadBatch(batch)
 
 		if err != nil {
 
@@ -119,7 +149,7 @@ func (c *Client) StartClientLoop() {
 
 		} else {
 
-			ack, err := SendBatch(c.conn, batch)
+			ack, err := batch.Send(c.conn)
 
 			if err != nil {
 				log.Errorf("action: apuesta_enviada | result: fail | error: %v", err)
