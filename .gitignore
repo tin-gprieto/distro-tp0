@@ -5,7 +5,7 @@
 bin/
 
 # Data
-.data/dataset
+.data/
 
 # Config 
 docker-compose-dev.yaml
