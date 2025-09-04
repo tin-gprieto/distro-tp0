@@ -43,7 +43,7 @@ docker-compose-logs:
 debug:
 	docker compose -f docker-compose-dev.yaml stop -t 10
 	docker compose -f docker-compose-dev.yaml down
-	./generar-compose docker-compose-dev.yaml $(C_AMOUNT)
+	./generar-compose.sh docker-compose-dev.yaml $(C_AMOUNT)
 	docker compose -f docker-compose-dev.yaml up -d --build
 	docker compose -f docker-compose-dev.yaml logs -f
 .PHONY: debug
