@@ -3,6 +3,8 @@ PWD := $(shell pwd)
 
 GIT_REMOTE = github.com/7574-sistemas-distribuidos/docker-compose-init
 
+C_AMOUNT ?= 1
+
 default: build
 
 all:
@@ -37,3 +39,11 @@ docker-compose-down:
 docker-compose-logs:
 	docker compose -f docker-compose-dev.yaml logs -f
 .PHONY: docker-compose-logs
+
+debug:
+	docker compose -f docker-compose-dev.yaml stop -t 10
+	docker compose -f docker-compose-dev.yaml down
+	./generar-compose docker-compose-dev.yaml $(C_AMOUNT)
+	docker compose -f docker-compose-dev.yaml up -d --build
+	docker compose -f docker-compose-dev.yaml logs -f
+.PHONY: debug
