@@ -127,4 +127,6 @@ func main() {
 	}()
 
 	client.StartClientLoop()
+
+	common.ClientShutdown(client)
 }

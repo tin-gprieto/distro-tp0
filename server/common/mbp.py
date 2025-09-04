@@ -37,9 +37,8 @@ def __deserialize_string(data: bytes, offset: int):
     return s, offset
 
 def __deserialize_bet(data: bytes) -> Bet:
-    # Leer longitud total
-    total_length = struct.unpack_from(">I", data, 0)[0]
-    offset = 4
+    """Deserializa un Bet a partir de datos en bruto."""
+    offset = 0
 
     # Agency
     agency = struct.unpack_from(">i", data, offset)[0]

@@ -151,19 +151,17 @@ func (c *Client) StartClientLoop() {
 
 			ack, err := batch.Send(c.conn)
 
-			if err != nil {
+			if err != nil || ack.BetsRead != uint32(betsLoaded) {
 				log.Errorf("action: apuesta_enviada | result: fail | error: %v", err)
 				break
 			}
 
-			if ack.Id != SUCCESS_ID && ack.BetsRead != uint32(betsLoaded) {
-				log.Errorf("action: apuesta_enviada | result: fail | error: %v", err)
+			if ack.Id == SUCCESS_ID {
+				log.Infof("action: apuesta_enviada | result: success | cantidad: %v", betsLoaded)
 			}
 		}
 
 		c.conn.Close()
-
-		log.Infof("action: apuesta_enviada | result: success | cantidad: %v", betsLoaded)
 
 		// Wait a time between sending one message and the next one
 		time.Sleep(c.config.LoopPeriod)
@@ -171,5 +169,5 @@ func (c *Client) StartClientLoop() {
 		eof = finished
 
 	}
-	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+
 }

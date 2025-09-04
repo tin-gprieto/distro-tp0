@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-const SUCCESS_ID = 1
-const ERROR_ID = 2
+const SUCCESS_ID = 0
+const ERROR_ID = 1
 
 type Ack struct {
 	Id       uint32
@@ -98,13 +98,7 @@ func (b *Bet) Serialize() []byte {
 	writeString(buf, b.Birthdate.Format("2006-01-02"))
 	binary.Write(buf, binary.BigEndian, b.Number)
 
-	// Longitud total
-	data := buf.Bytes()
-	final := new(bytes.Buffer)
-	binary.Write(final, binary.BigEndian, uint32(len(data))) // longitud total
-	final.Write(data)
-
-	return final.Bytes()
+	return buf.Bytes()
 }
 
 func (b *Bet) Send(conn net.Conn) (*Ack, error) {
