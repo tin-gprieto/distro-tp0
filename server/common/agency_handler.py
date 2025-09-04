@@ -4,14 +4,13 @@ import socket
 from common.utils import has_won, load_bets
 from common.mbp import WinnersAck
 
-WAITLIST_SIZE = 5
-
 class AgencyHandler:
-    def __init__(self):
+    def __init__(self, client_amount):
         # Diccionario (id, ip)
         self.__agencies_waitlist = {}
         # Diccionario (ip, socket)
         self.__agencies_ready = {}
+        self.__client_amount = client_amount
 
     def is_in_the_waitlist(self, ip):
         """Verifica si una agencia está en la lista de espera."""
@@ -46,7 +45,7 @@ class AgencyHandler:
 
     def all_agencies_are_ready(self):
         """Verifica si todas las agencias están listas."""
-        notify_all = len(self.__agencies_ready) == WAITLIST_SIZE
+        notify_all = len(self.__agencies_ready) == self.__client_amount
         return notify_all
 
     def notify_winners_to_agencies(self):

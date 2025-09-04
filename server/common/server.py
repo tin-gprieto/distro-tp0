@@ -8,9 +8,9 @@ from common.utils import store_bets
 from common.agency_handler import AgencyHandler
 
 class Server:
-    def __init__(self, port, listen_backlog):
+    def __init__(self, port, listen_backlog, client_amount):
         # Initialize server socket
-        self.agency_handler = AgencyHandler()
+        self.agency_handler = AgencyHandler(client_amount)
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
