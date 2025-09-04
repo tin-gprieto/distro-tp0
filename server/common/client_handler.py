@@ -45,7 +45,7 @@ class ClientHandlerThread(threading.Thread):
                 logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
 
             if isLastOne:
-                logging.info(f"action: ultima_apuesta_recibida | agencia_id: {clientID} | agency_ip: {ip}")
+                logging.info(f"action: ultima_apuesta_recibida | result: success | agencia_id: {clientID} | agency_ip: {ip}")
                 # Último paquete, esperar a todos los clientes
                 self.barrier.wait()
                 self.send_winners(client_socket, clientID)
