@@ -183,9 +183,9 @@ func (c *Client) StartClient() {
 	ganadores, err := c.WaitWinners()
 
 	if err != nil {
-		log.Errorf("consulta_ganadores | result: fail | error: %v", err)
+		log.Errorf("action: consulta_ganadores | result: fail | error: %v", err)
 	} else {
-		log.Infof("consulta_ganadores | result: success | cant_ganadores: %d", ganadores)
+		log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %d", ganadores)
 	}
 
 }
