@@ -1,0 +1,27 @@
+import threading
+
+
+class ThreadPool:
+    def __init__(self, threads):
+        self.threads = threads
+        self.lock = threading.Lock()
+        self.by_ip = {}
+        self.next = 0
+
+    def assign_connection(self, client_socket, ip):
+        with self.lock:
+            if ip not in self.by_ip:
+                self.by_ip[ip] = self.threads[self.next % len(self.threads)]
+                self.next += 1
+            thread = self.by_ip[ip]
+        thread.assign_connection(client_socket, ip)
+
+    def start(self):
+        for thread in self.threads:
+            thread.start()
+
+    def join(self):
+        for thread in self.threads:
+            thread.join()
+            
+    

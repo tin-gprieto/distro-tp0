@@ -3,3 +3,9 @@
 
 # Executables
 bin/
+
+# Data
+.data/
+
+# Config 
+docker-compose-dev.yaml
