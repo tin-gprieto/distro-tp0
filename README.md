@@ -193,20 +193,28 @@ En este caso, el tipo de mensaje cambia y la respuesta del servidor tambíen, po
 Las estructuras de cada mensaje son:
 
 +----------------+----------------+----------------+----------------+----------------+----------------+
+
 | length (4 B)   | first_name     | last_name      | document       | birthdate      | number (4 B)   |
+
 |                | (string uint16)| (string uint16)| (string uint16)| (string uint16)|                |
+
 +----------------+----------------+----------------+----------------+----------------+----------------+
 
 con String uint16 como:
 
 +----------------+----------------+
+
 | length (2 B)   | payload (N B)  |
+
 +----------------+----------------+
+
 
 Y el ACK con id SUCCESS (0) o ERROR(1)
 
 +----------------+
+
 | id (4 B)       |
+
 +----------------+
 
 Así mismo se implementaron funciones __safe_send__ y __safe_rcv__ en python y __SafeSend__ y __SafeRcv__ en GO para evitar problemas de short write y short read. Basicamente todas funcionan de la misma manera, aseguran que cierta cantidad de bytes sean escritos/leídos. En el caso del envío se manda un cadena de bytes y se asegura que se mande todo el largo, y el caso de la recepción, se pasa por parámetro una longitud y se garantiza que se reciban.
@@ -222,13 +230,17 @@ En este ejercicio se siguen enviando apuestas pero de manera diferente. En este 
 Para esto se implementó una estrcutura de batch para serializar/deserializar:
 
 +----------------+----------------+
+
 | length (4 B)   | payload (list[bet]) |
+
 +----------------+----------------+
 
 Y tambien un nuevo ACK para recibir que todo salió correctamente y se leyeron la cantidad de bets esperadas:
 
 +----------------+----------------+
+
 | id (4 B)       | bets_amount (4 B) |
+
 +----------------+----------------+
 
 Para cargar el batch, se abre al inicio el archivo, y se va leyendo de tramos para cargarlo completamente. Como este file descriptor se encuentra abierto a la hora de la ejecución del programa, tambien se incluye en el __ClientShutdown__.
@@ -245,13 +257,17 @@ En el caso de __batch__ se agregan dos campos_:
 - is_last: indica al servidor si es el último paquete enviado así puede llevar la cuenta
  
 +----------------+----------------+----------------+----------------+
+
 | length (4 B)   | client_id (4 B)   | is_last (1 B)   | payload (list[bet]) |
+
 +----------------+----------------+----------------+----------------+
 
 Por el lado de __WinnersAck__, se reutiliza completamente la estructura de, el ahora llamado __BatchAck__. Si al momento de deserializar, se encuentra que tiene como id a WINNERS_ID (2), interpreta que en vez de ser la cantidad de apuestas almacenadas por el servidor en el envío del batch, es la cantidad de bytes de payload. Así, sabiendo el tamaño del payload, se puede leer la lista de documentos de ganadores.
 
 +----------------+----------------+----------------+
+
 | id (4 B)       | payload_size(4 B)| payload (list[document]) |
+
 +----------------+----------------+----------------+
 
 La lógica sí cambia un poco, ya que el cliente tiene que detectar cuál es su último paquete y el servidor tiene que manejar los avisos.
