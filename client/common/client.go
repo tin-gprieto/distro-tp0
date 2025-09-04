@@ -87,43 +87,25 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
-// StartClientLoop Send messages to the client until some time threshold is met
-func (c *Client) StartClientLoop() {
-	// There is an autoincremental msgID to identify every message sent
-	// Messages if the message amount threshold has not been surpassed
-	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
+// StartClient Starts the client operations
+func (c *Client) StartClient() {
+	c.createClientSocket()
 
-		select {
-		case <-c.interrupt:
-			// Corta la ejecución del loop ante una señal de interrupción
-			log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
-			return
-		default:
-			// Continúa con la ejecución normal del loop
-		}
+	ack, err := c.bet.Send(c.conn)
 
-		// Create the connection the server in every loop iteration. Send an
-		c.createClientSocket()
-
-		err := sendBet(c.conn, c.bet)
-
-		c.conn.Close()
-
-		if err != nil {
-			log.Errorf("action: apuesta_enviada | result: fail | error: %v",
-				err,
-			)
-			return
-		}
-
+	if ack.Id == SUCCESS_ID && err == nil {
 		log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
 			c.bet.Document,
 			c.bet.Number,
 		)
-
-		// Wait a time between sending one message and the next one
-		time.Sleep(c.config.LoopPeriod)
-
+	} else {
+		log.Errorf("action: apuesta_enviada | result: fail | error: %v", err)
 	}
+
+	c.conn.Close()
+
+	// Wait a time between sending one message and the next one
+	time.Sleep(c.config.LoopPeriod)
+
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }

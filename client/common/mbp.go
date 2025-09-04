@@ -9,6 +9,37 @@ import (
 	"time"
 )
 
+const SUCCESS_ID = 0
+const ERROR_ID = 1
+
+type Ack struct {
+	Id uint32
+}
+
+func DeserializeAck(data []byte) (*Ack, error) {
+	if len(data) < 4 {
+		return nil, fmt.Errorf("data too short to deserialize Ack")
+	}
+	id := binary.BigEndian.Uint32(data[0:4])
+	return &Ack{
+		Id: id,
+	}, nil
+}
+
+func RcvAck(conn net.Conn) (*Ack, error) {
+
+	bytes, err := SafeRecv(conn, 4)
+	if err != nil {
+		return nil, fmt.Errorf("failed to receive server ack: %v", err)
+	}
+
+	ack, err := DeserializeAck(bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deserialize server ack: %v", err)
+	}
+	return ack, nil
+}
+
 type Bet struct {
 	Agency    uint32
 	FirstName string
@@ -51,7 +82,7 @@ func writeString(buf *bytes.Buffer, s string) {
 }
 
 // Serialize convierte Bet en []byte
-func (b *Bet) Serialize() ([]byte, error) {
+func (b *Bet) Serialize() []byte {
 	buf := new(bytes.Buffer)
 
 	// Escribe en el buf la estructura en bytes
@@ -68,16 +99,21 @@ func (b *Bet) Serialize() ([]byte, error) {
 	binary.Write(final, binary.BigEndian, uint32(len(data))) // longitud total
 	final.Write(data)
 
-	return final.Bytes(), nil
+	return final.Bytes()
 }
 
-func sendBet(conn net.Conn, bet *Bet) error {
+func (b *Bet) Send(conn net.Conn) (*Ack, error) {
 
-	data, err := bet.Serialize()
+	err := SafeSend(conn, b.Serialize())
 
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to send batch: %v", err)
 	}
 
-	return safe_send(conn, data)
+	log.Debugf("action: bet_sent | result: success")
+	log.Debugf("action: waiting_for_ack | result: in_progress")
+
+	rcv_ack, err := RcvAck(conn)
+
+	return rcv_ack, err
 }
