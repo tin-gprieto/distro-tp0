@@ -2,17 +2,20 @@
 
 ## [🔗 Tests del TP](https://github.com/7574-sistemas-distribuidos/tp0-tests)
 
-- [Parte 1: Docker](#parte-1-docker)
-  - [Ejercicio N°1](#ejercicio-n1)
-  - [Ejercicio N°2](#ejercicio-n2)
-  - [Ejercicio N°3](#ejercicio-n3)
-  - [Ejercicio N°4](#ejercicio-n4)
-- [Parte 2: Comunicaciones](#parte-2-comunicaciones)
-  - [Ejercicio N°5](#ejercicio-n5)
-  - [Ejercicio N°6](#ejercicio-n6)
-  - [Ejercicio N°7](#ejercicio-n7)
-- [Parte 3: Concurrencia](#parte-3-concurrencia)
-  - [Ejercicio N°8](#ejercicio-n8)
+- [Tabla de Contenidos - TP0 Sistemas Distribuidos](#tabla-de-contenidos---tp0-sistemas-distribuidos)
+  - [🔗 Tests del TP](#-tests-del-tp)
+- [TP0 - Sistemas Distribuidos](#tp0---sistemas-distribuidos)
+  - [Parte 1: Docker](#parte-1-docker)
+    - [Ejercicio N°1:](#ejercicio-n1)
+    - [Ejercicio N°2:](#ejercicio-n2)
+    - [Ejercicio N°3:](#ejercicio-n3)
+    - [Ejercicio N°4:](#ejercicio-n4)
+  - [Parte 2: Comunicaciones](#parte-2-comunicaciones)
+    - [Ejercicio N°5:](#ejercicio-n5)
+    - [Ejercicio N°6:](#ejercicio-n6)
+    - [Ejercicio N°7:](#ejercicio-n7)
+  - [Parte 3: Concurrencia](#parte-3-concurrencia)
+    - [Ejercicio N°8:](#ejercicio-n8)
 
 # TP0 - Sistemas Distribuidos
 
@@ -277,4 +280,20 @@ La lógica sí cambia un poco, ya que el cliente tiene que detectar cuál es su 
   
 
 ## Parte 3: Concurrencia
+
 ### Ejercicio N°8:
+
+Para cumplir con el propósito del último ejercicio, solamente se debió modificar el comportamiento del servidor, ya que lo que se requiere es que se procesen de manera simultanea varias consultas.
+
+En éste caso se optó por realizar un ThreadPool (**implementado manualmente**) con una cantidad fija de trabajadores que sería la misma a la cantidad de clientes.
+Sin embargo, no se mantiene una sola conexión por cliente, sino que se sigue mantentiendo el esquema de una conexión por envío de paquetes, esto último podría simplicarse.
+
+Por lo tanto, para esto, se va enviando los detalles de la conexión a los hilos correspondientes mediante la lectura de ip del cliente. Una vez se atiende la consulta, el procedimiento es bastante similar, solo que se incluyen locks de sincronización para la lectura/escritura del archivo de apuestas.
+
+Para poder cumplir con el apartado del ejercicio 7, cada hilo, cuando recibe el último paquete de cada cliente, se queda esperando en una barrera.
+La barrera es muy útil en este caso:
+
+- Permite esperar a que todos los clientes lleguen a ella, y luego poder ejecutar el sorteo.
+- Al no tener que salir del hilo, se puede mantener la conexión con el cliente y enviar sin problemas el paquete.
+
+Lo único que resulta no tan oportuno, es que cada hilo debe hacer dicho procesamiento, por lo tanto es más costoso y requiere el uso de locks para la lectura.
