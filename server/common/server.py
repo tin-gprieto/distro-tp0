@@ -6,6 +6,7 @@ import sys
 import threading
 
 from common.thread_pool import ThreadPool
+from common.client_handler import ClientHandlerThread
 
 class Server:
     def __init__(self, port, listen_backlog, client_amount):
@@ -30,14 +31,16 @@ class Server:
         file_lock = threading.Lock()
         barrier = threading.Barrier(self.client_amount)
 
-        thread_pool = ThreadPool(self.client_amount, file_lock, barrier)
-        
+        threads = [ClientHandlerThread(i, file_lock, barrier) for i in range(self.client_amount)]
+
+        thread_pool = ThreadPool(threads)
+
         thread_pool.start()
         
         while True:
             client_sock, ip = self.__accept_new_connection()
             thread_pool.assign_connection(client_sock, ip)
-
+        
     def __accept_new_connection(self):
         """
         Accept new connections
