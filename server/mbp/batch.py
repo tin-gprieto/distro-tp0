@@ -1,4 +1,4 @@
-import struct
+
 from common.safe_transport import safe_rcv
 
 class Batch:
@@ -13,9 +13,9 @@ class Batch:
         # Leer longitud
         try:
             header = safe_rcv(client_sock, 9)
-            total_length = struct.unpack(">I", header[0:4])[0]
-            agency = struct.unpack_from(">i", header[4:8], 0)[0]
-            is_last = struct.unpack(">B", header[8:9])[0]
+            total_length = int.from_bytes(header[:4], byteorder="big", signed=False)
+            agency = int.from_bytes(header[4:8], byteorder="big", signed=True)
+            is_last = int.from_bytes(header[8:9], byteorder="big", signed=False)
             payload = safe_rcv(client_sock, total_length)
         except ConnectionError:
             raise ConnectionError("Conexión cerrada al leer longitud")

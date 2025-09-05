@@ -1,5 +1,4 @@
 import logging
-import struct
 
 from common.utils import Bet
 from common.safe_transport import safe_rcv
@@ -8,7 +7,7 @@ from mbp.ack import SUCCESS_ID, BatchAck
 
 def __deserialize_string(data: bytes, offset: int):
     """Lee una string: primero 2 bytes de longitud, luego contenido."""
-    length = struct.unpack_from(">H", data, offset)[0]
+    length = int.from_bytes(data[offset:offset+2], byteorder="big", signed=False)
     offset += 2
     s = data[offset:offset+length].decode('utf-8')
     offset += length
@@ -19,14 +18,14 @@ def __deserialize_bet(data: bytes) -> Bet:
     offset = 0
 
     # Agency
-    agency = struct.unpack_from(">i", data, offset)[0]
+    agency = int.from_bytes(data[offset:offset+4], byteorder="big", signed=True)
     offset += 4
 
     first_name, offset = __deserialize_string(data, offset)
     last_name, offset = __deserialize_string(data, offset)
     document, offset = __deserialize_string(data, offset)
     birthdate_str, offset = __deserialize_string(data, offset)
-    number = struct.unpack_from(">i", data, offset)[0]
+    number = int.from_bytes(data[offset:offset+4], byteorder="big", signed=True)
     
     offset += 4
 
@@ -59,7 +58,7 @@ def recv_bet(client_sock):
     # Leer longitud
     try:
         header = safe_rcv(client_sock, 4)
-        total_length = struct.unpack(">I", header)[0]
+        total_length = int.from_bytes(header, byteorder="big", signed=False)
         payload = safe_rcv(client_sock, total_length)
     except ConnectionError:
         raise ConnectionError("Conexión cerrada al leer longitud")

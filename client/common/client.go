@@ -128,6 +128,9 @@ func (c *Client) StartClient() {
 
 	betsSent := 0
 
+	// Create the connection the server in every loop iteration. Send an
+	c.createClientSocket()
+
 	for !eof {
 
 		select {
@@ -138,9 +141,6 @@ func (c *Client) StartClient() {
 		default:
 			// Continúa con la ejecución normal del loop
 		}
-
-		// Create the connection the server in every loop iteration. Send an
-		c.createClientSocket()
 
 		batch := NewBatch(c.config.ID)
 
@@ -180,8 +180,6 @@ func (c *Client) StartClient() {
 				log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %d", ganadores)
 			}
 		}
-
-		c.conn.Close()
 
 		// Wait a time between sending one message and the next one
 		time.Sleep(c.config.LoopPeriod)
