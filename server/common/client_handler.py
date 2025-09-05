@@ -16,7 +16,7 @@ class ClientHandlerThread(threading.Thread):
         super().__init__()
         self.thread_id = thread_id
         self.connection = None
-        self.has_connection = threading.Condition()
+        self.connection_event = threading.Event()
         self.file_lock = file_lock
         self.barrier = barrier
 
@@ -56,16 +56,14 @@ class ClientHandlerThread(threading.Thread):
         client_socket.close()
                 
     def assign_connection(self, client_socket, ip):
-        with self.has_connection:
-            self.connection = (client_socket, ip)
-            self.has_connection.notify()
+        self.connection = (client_socket, ip)
+        self.connection_event.set()  # Desbloquea el run()
 
     def run(self):
-        
-        with self.has_connection:
-            while not self.connection:
-                self.has_connection.wait()  # esperar hasta que haya conexión
-            client_socket, ip = self.connection
-
+        # Espera hasta que le asignen conexión
+        logging.debug(f"Thread {self.thread_id} waiting for connection.")
+        self.connection_event.wait()
+        logging.debug(f"Thread {self.thread_id} starting with connection.")
+        client_socket, ip = self.connection
         self.handle_agency(client_socket, ip)
     
