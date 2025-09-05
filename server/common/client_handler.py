@@ -12,13 +12,11 @@ class ClientHandlerThread(threading.Thread):
     """
     Hilo fijo que maneja conexiones asignadas según addr.
     """
-    def __init__(self, thread_id, file_lock, barrier):
+    def __init__(self, socket, file_lock, barrier):
         super().__init__()
-        self.thread_id = thread_id
-        self.connection = None
-        self.connection_event = threading.Event()
+        self.socket = socket
         self.file_lock = file_lock
-        self.barrier = barrier
+        self.sorteo_barrier = barrier
 
     def search_agency_winners(self, id):
         """Busca los ganadores de una agencia en las apuestas."""
@@ -37,33 +35,26 @@ class ClientHandlerThread(threading.Thread):
         WinnersAck(winners).send(client_socket)
         logging.info(f"action: sorteo | result: success")
     
-    def handle_agency(self, client_socket, ip):
+    def handle_agency(self):
         
         isLastPacket = False
 
         while not isLastPacket:
-            bets, isLastPacket, clientID = rcv_bets_in_batch(client_socket)
+            bets, isLastPacket, clientID = rcv_bets_in_batch(self.socket)
 
             # Guardar batch de forma thread-safe
             with self.file_lock:
                 store_bets(bets)
                 logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
                 
-        logging.info(f"action: ultima_apuesta_recibida | result: success | agencia_id: {clientID} | agency_ip: {ip}")
+        logging.info(f"action: ultima_apuesta_recibida | result: success | agencia_id: {clientID}")
         # Último paquete, esperar a todos los clientes
-        self.barrier.wait()
-        self.send_winners(client_socket, clientID)
-        client_socket.close()
-                
-    def assign_connection(self, client_socket, ip):
-        self.connection = (client_socket, ip)
-        self.connection_event.set()  # Desbloquea el run()
+        self.sorteo_barrier.wait()
+        self.send_winners(self.socket, clientID)
+        self.socket.close()
+
 
     def run(self):
-        # Espera hasta que le asignen conexión
-        logging.debug(f"Thread {self.thread_id} waiting for connection.")
-        self.connection_event.wait()
-        logging.debug(f"Thread {self.thread_id} starting with connection.")
-        client_socket, ip = self.connection
-        self.handle_agency(client_socket, ip)
+        logging.debug(f"Thread handler starting with connection.")
+        self.handle_agency()
     
