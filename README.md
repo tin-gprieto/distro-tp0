@@ -283,17 +283,18 @@ La lógica sí cambia un poco, ya que el cliente tiene que detectar cuál es su 
 
 ### Ejercicio N°8:
 
-Para cumplir con el propósito del último ejercicio, solamente se debió modificar el comportamiento del servidor, ya que lo que se requiere es que se procesen de manera simultanea varias consultas.
+Para cumplir con el propósito del último ejercicio, solamente se debió modificar el comportamiento del servidor, ya que lo que se requiere es que se procesen de manera simultánea varias consultas.
 
-En éste caso se optó por realizar un ThreadPool (**implementado manualmente**) con una cantidad fija de trabajadores que sería la misma a la cantidad de clientes.
-Sin embargo, no se mantiene una sola conexión por cliente, sino que se sigue mantentiendo el esquema de una conexión por envío de paquetes, esto último podría simplicarse.
+En este caso se optó por crear un hilo **client_handler** para cada conexión recibida, en lugar de utilizar un ThreadPool con una cantidad fija de trabajadores.
+A diferencia de lo anterior, ahora sí se mantiene una sola conexión por cliente, permitiendo que cada uno envíe sus batchs de manera consecutiva sin necesidad de volver a establecer la conexión.
 
-Por lo tanto, para esto, se va enviando los detalles de la conexión a los hilos correspondientes mediante la lectura de ip del cliente. Una vez se atiende la consulta, el procedimiento es bastante similar, solo que se incluyen locks de sincronización para la lectura/escritura del archivo de apuestas.
+Por lo tanto, cada vez que llega una conexión se lanza un nuevo hilo que atiende al cliente, y una vez procesada la consulta, el procedimiento es bastante similar, solo que se incluyen locks de sincronización para la lectura/escritura del archivo de apuestas.
 
-Para poder cumplir con el apartado del ejercicio 7, cada hilo, cuando recibe el último paquete de cada cliente, se queda esperando en una barrera.
+Para poder cumplir con el apartado del ejercicio 7, cada hilo, cuando recibe el último paquete de su cliente, se queda esperando en una barrera.
 La barrera es muy útil en este caso:
 
-- Permite esperar a que todos los clientes lleguen a ella, y luego poder ejecutar el sorteo.
-- Al no tener que salir del hilo, se puede mantener la conexión con el cliente y enviar sin problemas el paquete.
+Permite esperar a que todos los clientes lleguen a ella, y luego poder ejecutar el sorteo.
 
-Lo único que resulta no tan oportuno, es que cada hilo debe hacer dicho procesamiento, por lo tanto es más costoso y requiere el uso de locks para la lectura.
+Al no tener que salir del hilo, se puede mantener la conexión con el cliente y enviar sin problemas el paquete.
+
+Lo único que resulta no tan oportuno es que cada hilo debe hacer dicho procesamiento, por lo tanto es más costoso y requiere el uso de locks para la lectura.
