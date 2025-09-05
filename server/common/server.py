@@ -11,35 +11,29 @@ from common.client_handler import ClientHandlerThread
 class Server:
     def __init__(self, port, listen_backlog, client_amount):
         # Initialize server socket
+        self.running = True
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
         # Initialize server struct
         self.client_amount = int(client_amount)
-
-    def run(self):
-        """
-        Dummy Server loop
-
-        Server that accept a new connections and establishes a
-        communication with a client. After client with communucation
-        finishes, servers starts to accept new connections again
-        """
-
-        signal.signal(signal.SIGTERM, lambda signum, frame: (self.server_shutdown(), sys.exit(0)))
-
+        
         file_lock = threading.Lock()
         barrier = threading.Barrier(self.client_amount)
 
         threads = [ClientHandlerThread(i, file_lock, barrier) for i in range(self.client_amount)]
 
-        thread_pool = ThreadPool(threads)
+        self.thread_pool = ThreadPool(threads)
 
-        thread_pool.start()
+    def run(self):
+
+        signal.signal(signal.SIGTERM, lambda signum, frame: (self.server_shutdown(), sys.exit(0)))
+
+        self.thread_pool.start()
         
-        while True:
+        while self.running:
             client_sock, ip = self.__accept_new_connection()
-            thread_pool.assign_connection(client_sock, ip)
+            self.thread_pool.assign_connection(client_sock, ip)
         
     def __accept_new_connection(self):
         """
@@ -57,7 +51,9 @@ class Server:
     
     def server_shutdown(self):
         logging.info("action: shutdown | result: in_progress")
+        self.running = False
         self._server_socket.close()
         # Esperar a que terminen todos los hilos
         self.thread_pool.join()
         logging.info("action: shutdown | result: success")
+        sys.exit(0)

@@ -9,11 +9,10 @@ class ThreadPool:
         self.next = 0
 
     def assign_connection(self, client_socket, ip):
-        with self.lock:
-            if ip not in self.by_ip:
-                self.by_ip[ip] = self.threads[self.next % len(self.threads)]
-                self.next += 1
-            thread = self.by_ip[ip]
+        if ip not in self.by_ip:
+            self.by_ip[ip] = self.threads[self.next % len(self.threads)]
+            self.next += 1
+        thread = self.by_ip[ip]
         thread.assign_connection(client_socket, ip)
 
     def start(self):
