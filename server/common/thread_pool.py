@@ -1,3 +1,4 @@
+import logging
 import threading
 
 
@@ -18,9 +19,11 @@ class ThreadPool:
     def start(self):
         for thread in self.threads:
             thread.start()
+        logging.debug("action: all_threads_started | result: success")
 
     def join(self):
         for thread in self.threads:
             thread.join()
+        logging.debug("action: all_threads_finished | result: success")
             
     
